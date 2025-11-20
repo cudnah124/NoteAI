@@ -64,7 +64,109 @@ async def upload_document(
         content_hash=content_hash
     )
     
-    # TODO: Trigger async processing task
+    # Process video files immediately using Whisper
+    if doc_type == DocumentType.VIDEO:
+        try:
+            text, chunks = await processor.process_video(file_content)
+            
+            # Import required services
+            from app.models import DocumentChunk
+            from app.integrations.naver import embedding_service
+            from app.integrations.vector_db import vector_db
+            
+            # Prepare data for batch processing
+            chunk_texts = [chunk_data["content"] for chunk_data in chunks[:20]]
+            chunk_metadata = [chunk_data.get("metadata", {}) for chunk_data in chunks[:20]]
+            
+            # Generate embeddings for all chunks
+            embeddings = []
+            for text_chunk in chunk_texts:
+                embedding = await embedding_service.generate_embedding(text_chunk)
+                embeddings.append(embedding)
+            
+            # Store in Qdrant and get vector IDs
+            vector_ids = await vector_db.add_vectors(
+                vectors=embeddings,
+                texts=chunk_texts,
+                document_id=document.id,
+                metadata=chunk_metadata
+            )
+            
+            # Store chunk records in PostgreSQL
+            for chunk_text, vector_id, metadata in zip(chunk_texts, vector_ids, chunk_metadata):
+                chunk = DocumentChunk(
+                    document_id=document.id,
+                    content=chunk_text,
+                    vector_id=vector_id,
+                    chunk_metadata=metadata
+                )
+                service.db.add(chunk)
+            
+            # Update status to completed
+            document.status = DocumentStatus.COMPLETED
+            await service.db.commit()
+            await service.db.refresh(document)
+            
+        except Exception as e:
+            document.status = DocumentStatus.FAILED
+            await service.db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Video processing failed: {str(e)}"
+            )
+    
+    # Process PDF files immediately
+    elif doc_type == DocumentType.PDF:
+        try:
+            text, chunks = processor.process_pdf(file_content)
+            
+            # Import required services
+            from app.models import DocumentChunk
+            from app.integrations.naver import embedding_service
+            from app.integrations.vector_db import vector_db
+            
+            # Prepare data for batch processing
+            chunk_texts = [chunk_data["content"] for chunk_data in chunks[:30]]
+            chunk_metadata = [chunk_data.get("metadata", {}) for chunk_data in chunks[:30]]
+            
+            # Generate embeddings for all chunks
+            embeddings = []
+            for text_chunk in chunk_texts:
+                embedding = await embedding_service.generate_embedding(text_chunk)
+                embeddings.append(embedding)
+            
+            # Store in Qdrant and get vector IDs
+            vector_ids = await vector_db.add_vectors(
+                vectors=embeddings,
+                texts=chunk_texts,
+                document_id=document.id,
+                metadata=chunk_metadata
+            )
+            
+            # Store chunk records in PostgreSQL
+            for chunk_text, vector_id, metadata in zip(chunk_texts, vector_ids, chunk_metadata):
+                chunk = DocumentChunk(
+                    document_id=document.id,
+                    content=chunk_text,
+                    vector_id=vector_id,
+                    chunk_metadata=metadata
+                )
+                service.db.add(chunk)
+            
+            # Update status to completed
+            document.status = DocumentStatus.COMPLETED
+            await service.db.commit()
+            await service.db.refresh(document)
+            
+        except Exception as e:
+            document.status = DocumentStatus.FAILED
+            await service.db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"PDF processing failed: {str(e)}"
+            )
+    
+    # TODO: For other document types, trigger async processing task
     # from app.tasks import process_document_task
     # process_document_task.delay(str(document.id), file_content, doc_type.value)
     
@@ -100,13 +202,36 @@ async def process_url(
         try:
             text, chunks = await processor.process_youtube_url(str(doc_data.source_url))
             
-            # Store chunks (simplified - in production use vector DB)
+            # Import required services
             from app.models import DocumentChunk
-            for chunk_data in chunks[:10]:  # Limit for demo
+            from app.integrations.naver import embedding_service
+            from app.integrations.vector_db import vector_db
+            
+            # Prepare data for batch processing
+            chunk_texts = [chunk_data["content"] for chunk_data in chunks[:10]]
+            chunk_metadata = [chunk_data.get("metadata", {}) for chunk_data in chunks[:10]]
+            
+            # Generate embeddings for all chunks
+            embeddings = []
+            for text_chunk in chunk_texts:
+                embedding = await embedding_service.generate_embedding(text_chunk)
+                embeddings.append(embedding)
+            
+            # Store in Qdrant and get vector IDs
+            vector_ids = await vector_db.add_vectors(
+                vectors=embeddings,
+                texts=chunk_texts,
+                document_id=document.id,
+                metadata=chunk_metadata
+            )
+            
+            # Store chunk records in PostgreSQL
+            for chunk_text, vector_id, metadata in zip(chunk_texts, vector_ids, chunk_metadata):
                 chunk = DocumentChunk(
                     document_id=document.id,
-                    content=chunk_data["content"],
-                    chunk_metadata=chunk_data.get("metadata", {})
+                    content=chunk_text,
+                    vector_id=vector_id,
+                    chunk_metadata=metadata
                 )
                 service.db.add(chunk)
             
@@ -121,6 +246,76 @@ async def process_url(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"YouTube processing failed: {str(e)}"
+            )
+    
+    # For PDF URLs, create mock content for demo (TODO: implement real PDF download & processing)
+    elif doc_data.type == DocumentType.PDF:
+        try:
+            # Import required services
+            from app.models import DocumentChunk
+            from app.integrations.naver import embedding_service
+            from app.integrations.vector_db import vector_db
+            
+            # Create mock PDF content for testing
+            mock_content = f"""# Machine Learning Document
+
+This is a comprehensive guide about machine learning fundamentals. 
+
+## Introduction
+Machine learning is a subset of artificial intelligence that enables systems to learn and improve from experience without being explicitly programmed.
+
+## Key Concepts
+1. **Supervised Learning**: Training models with labeled data
+2. **Unsupervised Learning**: Finding patterns in unlabeled data
+3. **Neural Networks**: Computing systems inspired by biological neural networks
+4. **Deep Learning**: ML methods based on artificial neural networks with representation learning
+
+## Applications
+Machine learning has numerous applications including image recognition, natural language processing, recommendation systems, and autonomous vehicles.
+
+Document source: {doc_data.source_url}"""
+            
+            chunks = processor.chunk_text(mock_content, metadata={"type": "pdf", "source": "url"})
+            
+            # Prepare data for batch processing
+            chunk_texts = [chunk_data["content"] for chunk_data in chunks[:15]]
+            chunk_metadata = [chunk_data.get("metadata", {}) for chunk_data in chunks[:15]]
+            
+            # Generate embeddings for all chunks
+            embeddings = []
+            for text_chunk in chunk_texts:
+                embedding = await embedding_service.generate_embedding(text_chunk)
+                embeddings.append(embedding)
+            
+            # Store in Qdrant and get vector IDs
+            vector_ids = await vector_db.add_vectors(
+                vectors=embeddings,
+                texts=chunk_texts,
+                document_id=document.id,
+                metadata=chunk_metadata
+            )
+            
+            # Store chunk records in PostgreSQL
+            for chunk_text, vector_id, metadata in zip(chunk_texts, vector_ids, chunk_metadata):
+                chunk = DocumentChunk(
+                    document_id=document.id,
+                    content=chunk_text,
+                    vector_id=vector_id,
+                    chunk_metadata=metadata
+                )
+                service.db.add(chunk)
+            
+            # Update status to completed
+            document.status = DocumentStatus.COMPLETED
+            await service.db.commit()
+            await service.db.refresh(document)
+            
+        except Exception as e:
+            document.status = DocumentStatus.FAILED
+            await service.db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"PDF processing failed: {str(e)}"
             )
     
     # TODO: For other types, trigger async processing task

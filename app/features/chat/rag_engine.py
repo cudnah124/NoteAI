@@ -2,8 +2,11 @@
 RAG (Retrieval Augmented Generation) Engine
 Orchestrates retrieval and generation for Q&A
 """
+import logging
 from typing import List, Dict, Any
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
 
 
 class RAGEngine:
@@ -35,8 +38,11 @@ class RAGEngine:
         Returns:
             List of retrieved chunks with metadata
         """
+        logger.info(f"RAG: Retrieving context for query: '{query[:100]}...' from document: {document_id}")
+        
         # Generate query embedding
         query_vector = await self.embedding_service.generate_embedding(query)
+        logger.info(f"RAG: Generated query embedding, vector length: {len(query_vector)}")
         
         # Search vector database
         results = await self.vector_db.search_similar(
@@ -44,6 +50,12 @@ class RAGEngine:
             document_id=document_id,
             limit=top_k
         )
+        
+        logger.info(f"RAG: Retrieved {len(results)} chunks from vector DB")
+        if results:
+            logger.info(f"RAG: First chunk preview: {results[0].get('text', '')[:200]}...")
+        else:
+            logger.warning(f"RAG: No chunks found for document {document_id}")
         
         return results
     
@@ -64,6 +76,8 @@ class RAGEngine:
         Returns:
             Tuple of (answer, retrieved_chunks)
         """
+        logger.info(f"RAG: Answering question for document {document_id}")
+        
         # Retrieve relevant context
         retrieved = await self.retrieve_context(
             query=question,
@@ -73,6 +87,7 @@ class RAGEngine:
         
         # Extract text chunks
         context_chunks = [item.get("text", "") for item in retrieved]
+        logger.info(f"RAG: Extracted {len(context_chunks)} text chunks, total chars: {sum(len(c) for c in context_chunks)}")
         
         # Generate answer using LLM with context
         answer = await self.llm_service.qa_with_context(
@@ -81,6 +96,7 @@ class RAGEngine:
             chat_history=chat_history
         )
         
+        logger.info(f"RAG: Generated answer length: {len(answer)} chars")
         return answer, retrieved
 
 

@@ -49,6 +49,12 @@ class NaverBaseClient:
         """
         url = f"{self.api_url}{endpoint}" if not endpoint.startswith("http") else endpoint
         
+        # Merge default headers with any provided headers
+        headers = self._get_headers()
+        if 'headers' in kwargs:
+            headers.update(kwargs['headers'])
+        kwargs['headers'] = headers
+        
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.request(method, url, **kwargs)
             response.raise_for_status()

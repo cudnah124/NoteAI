@@ -132,40 +132,49 @@ Additional resources:
             review_text = await llm.chat_completion(messages, temperature=0.7, max_tokens=2000)
         
         # Parse review text into structured response
+        def extract_section(text: str, section_name: str) -> list:
+            """Extract bullet points from a section"""
+            lines = text.split('\n')
+            items = []
+            in_section = False
+            for line in lines:
+                if section_name in line:
+                    in_section = True
+                    continue
+                if in_section:
+                    if line.strip().startswith('-') or line.strip().startswith('•'):
+                        items.append(line.strip()[1:].strip())
+                    elif line.strip() and line.strip()[0].isdigit() and '.' in line[:3]:
+                        items.append(line.split('.', 1)[1].strip())
+                    elif line.strip() and not line[0].isspace() and items:
+                        break
+            return items
+        
+        overall = review_text.split("Strengths:")[0].replace("Overall:", "").strip() if "Strengths:" in review_text else review_text[:200]
+        strengths = extract_section(review_text, "Strengths:")
+        improvements = extract_section(review_text, "Areas for improvement:")
+        missing = extract_section(review_text, "Missing concepts:")
+        suggestions = extract_section(review_text, "Suggestions to add:")
+        
+        # Parse corrections
+        corrections = []
+        if "Corrections:" in review_text:
+            corr_section = review_text.split("Corrections:")[1].split("Additional resources:")[0] if "Additional resources:" in review_text else review_text.split("Corrections:")[1]
+            corr_items = extract_section(review_text, "Corrections:")
+            for item in corr_items:
+                corrections.append({"issue": item, "correction": "See feedback above"})
+        
+        resources = extract_section(review_text, "Additional resources:")
+        
         return ReviewResponse(
             note_id=note_id,
-            overall_feedback=review_text.split("Strengths:")[0].replace("Overall:", "").strip() if "Strengths:" in review_text else review_text[:200],
-            strengths=[
-                "Clear structure with headings",
-                "Good use of markdown formatting",
-                "Covers basic concepts"
-            ],
-            areas_for_improvement=[
-                "Add more specific examples from the source material",
-                "Expand on key concepts with definitions",
-                "Include practical applications"
-            ],
-            missing_concepts=[
-                "Advanced techniques mentioned in the document",
-                "Real-world use cases",
-                "Best practices and common pitfalls"
-            ],
-            suggestions_to_add=[
-                "Add a section explaining the core principles with examples from the document",
-                "Include diagrams or visual representations if mentioned in source",
-                "Add code examples or practical demonstrations",
-                "Summarize the key takeaways at the end",
-                "Cross-reference related concepts"
-            ],
-            corrections=[
-                {"issue": "Definition in paragraph 2", "correction": "Clarify the definition to match document terminology"},
-                {"issue": "Example approach", "correction": "Update the example to match the document's methodology"}
-            ],
-            additional_resources=[
-                "Explore the advanced topics mentioned in section 3",
-                "Research the practical applications discussed",
-                "Review the case studies provided"
-            ]
+            overall_feedback=overall,
+            strengths=strengths if strengths else ["Clear structure with headings"],
+            areas_for_improvement=improvements if improvements else ["Add more details"],
+            missing_concepts=missing if missing else ["See document for missing topics"],
+            suggestions_to_add=suggestions if suggestions else ["Review document content"],
+            corrections=corrections if corrections else [],
+            additional_resources=resources if resources else ["Review related materials"]
         )
     
     async def generate_recommendations(self, document_id: UUID) -> RecommendationResponse:

@@ -221,7 +221,7 @@ class DocumentProcessor:
     
     async def process_video(self, file_content: bytes) -> tuple[str, List[Dict[str, Any]]]:
         """
-        Process video file using Whisper (Naver Clova Speech) for transcription
+        Process video file using Naver Clova Speech for transcription
         
         Args:
             file_content: Video file bytes
@@ -233,9 +233,9 @@ class DocumentProcessor:
             from app.integrations.naver.whisper import WhisperService
             
             whisper = WhisperService()
+            logger.info("Starting video transcription with Naver Clova Speech API...")
             
             # Transcribe video to text
-            logger.info("Starting video transcription...")
             transcript = await whisper.transcribe_video(file_content, language="ko-KR")
             
             if not transcript:
@@ -247,7 +247,7 @@ class DocumentProcessor:
             logger.info(f"Transcription successful, length: {len(transcript)} characters")
             
             # Chunk the transcript
-            chunks = self.chunk_text(transcript, metadata={"type": "video", "source": "whisper"})
+            chunks = self.chunk_text(transcript, metadata={"type": "video", "source": "naver_clova_speech"})
             
             return transcript, chunks
             
