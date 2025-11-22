@@ -25,8 +25,8 @@ RUN useradd -m -u 1000 noteai && \
 
 USER noteai
 
-# Expose port
+# Expose port (Railway will use $PORT env variable)
 EXPOSE 8000
 
-# Default command (can be overridden in docker-compose)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Default command - Railway compatible
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}

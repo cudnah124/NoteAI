@@ -14,6 +14,7 @@ class User(BaseModel):
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
+    phone = Column(String(20), nullable=True)
     
     # Relationships
     documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")

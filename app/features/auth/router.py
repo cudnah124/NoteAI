@@ -33,7 +33,6 @@ async def register(
 
 @router.post(
     "/login",
-    response_model=Token,
     summary="Login",
     description="Authenticate user and receive JWT access token"
 )

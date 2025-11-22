@@ -12,6 +12,7 @@ from app.features.notes import router as notes_router
 from app.features.documents import router as documents_router
 from app.features.chat import router as chat_router
 from app.features.ai import router as ai_router
+from app.features.files import router as files_router
 
 
 @asynccontextmanager
@@ -46,6 +47,7 @@ app.include_router(notes_router)
 app.include_router(documents_router)
 app.include_router(chat_router)
 app.include_router(ai_router)
+app.include_router(files_router)  # Frontend compatibility layer
 
 
 @app.get("/")

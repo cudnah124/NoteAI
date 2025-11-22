@@ -648,6 +648,42 @@ Upload file PDF hoặc ảnh
 
 ---
 
+### POST `/files/upload/document`
+
+**Frontend-compatible upload endpoint** - Wraps `/documents/upload` with frontend-expected response format
+
+**Content-Type**: `multipart/form-data`
+
+**Form Data**:
+
+- `file`: File PDF, DOCX hoặc ảnh (max 10MB)
+
+**Response** (200 OK):
+
+```json
+{
+  "success": true,
+  "document": {
+    "id": "uuid",
+    "etag": "uuid",
+    "type": "pdf",
+    "status": "processing",
+    "title": "Machine Learning Textbook",
+    "created_at": "2025-11-20T10:00:00Z"
+  }
+}
+```
+
+**Supported File Types**:
+
+- PDF: `.pdf`
+- Word Documents: `.docx`
+- Images: `.png`, `.jpg`, `.jpeg`
+
+**Note**: This endpoint is designed for frontend compatibility. It returns `etag` field (same as document ID) and simplified status fields. Processing is instant for both PDF and DOCX files (typically 0.0s).
+
+---
+
 ### POST `/documents/url`
 
 Xử lý tài liệu từ URL (YouTube, web)
@@ -918,7 +954,15 @@ Xóa phiên chat và tất cả messages
 
 ### POST `/ai/review`
 
-Review và chấm điểm ghi chú
+**AI-powered note review với language detection tự động**
+
+Phân tích và đánh giá ghi chú của user, tự động phát hiện ngôn ngữ của ghi chú và trả về review bằng chính ngôn ngữ đó.
+
+**Language Detection**:
+
+- Hệ thống tự động detect ngôn ngữ từ nội dung ghi chú (Vietnamese/English)
+- Response sẽ được trả về hoàn toàn bằng ngôn ngữ được detect
+- Không cần client chỉ định ngôn ngữ
 
 **Request Body**:
 
@@ -928,42 +972,173 @@ Review và chấm điểm ghi chú
 }
 ```
 
-**Response** (200 OK):
+**Response (200 OK)** - Ví dụ với ghi chú tiếng Việt:
 
 ```json
 {
   "note_id": "uuid",
-  "correctness_score": 8,
-  "misunderstandings": [
-    "Supervised learning không chỉ áp dụng cho classification",
-    "Neural networks không phải là duy nhất phương pháp trong deep learning"
+  "overall_feedback": "Ghi chú của bạn cho thấy sự hiểu biết tốt về các khái niệm cơ bản của machine learning...",
+  "strengths": [
+    "Giải thích rõ ràng về supervised learning với các ví dụ cụ thể",
+    "Phân biệt tốt giữa classification và regression",
+    "Cấu trúc ghi chú logic và dễ theo dõi"
   ],
-  "missing_points": [
-    "Chưa đề cập đến unsupervised learning",
-    "Thiếu ví dụ thực tế về các thuật toán"
+  "areas_for_improvement": [
+    "Nên bổ sung thêm về unsupervised learning để có cái nhìn toàn diện",
+    "Thiếu các ví dụ về thuật toán cụ thể như decision trees, SVM",
+    "Chưa đề cập đến các vấn đề về overfitting và underfitting"
   ],
-  "constructive_feedback": "Ghi chú của bạn cho thấy hiểu biết tốt về các khái niệm cơ bản. Tuy nhiên, nên bổ sung thêm về unsupervised learning và reinforcement learning để có cái nhìn toàn diện hơn. Thêm vào đó, việc đưa ra các ví dụ thực tế sẽ giúp củng cố kiến thức tốt hơn."
+  "specific_corrections": [
+    "Neural networks không phải là phương pháp duy nhất trong deep learning - còn có CNN, RNN, Transformers",
+    "Supervised learning không chỉ áp dụng cho classification mà còn cho regression"
+  ],
+  "suggestions_for_expansion": [
+    "Thêm phần về cross-validation và model evaluation metrics",
+    "Bổ sung ví dụ thực tế về các bộ dataset nổi tiếng (MNIST, ImageNet)",
+    "Giải thích về feature engineering và data preprocessing"
+  ]
+}
+```
+
+**Response (200 OK)** - Ví dụ với ghi chú tiếng Anh:
+
+```json
+{
+  "note_id": "uuid",
+  "overall_feedback": "Your notes demonstrate a solid understanding of fundamental machine learning concepts...",
+  "strengths": [
+    "Clear explanation of supervised learning with concrete examples",
+    "Good distinction between classification and regression",
+    "Logical structure that's easy to follow"
+  ],
+  "areas_for_improvement": [
+    "Should add more about unsupervised learning for completeness",
+    "Missing examples of specific algorithms like decision trees, SVM",
+    "No mention of overfitting and underfitting issues"
+  ],
+  "specific_corrections": [
+    "Neural networks aren't the only method in deep learning - there are CNNs, RNNs, Transformers",
+    "Supervised learning applies to both classification and regression"
+  ],
+  "suggestions_for_expansion": [
+    "Add section on cross-validation and model evaluation metrics",
+    "Include real-world examples of famous datasets (MNIST, ImageNet)",
+    "Explain feature engineering and data preprocessing"
+  ]
 }
 ```
 
 **Fields Explanation**:
 
-- `correctness_score`: Điểm từ 0-10
-- `misunderstandings`: Các điểm hiểu nhầm hoặc sai
-- `missing_points`: Các điểm quan trọng còn thiếu
-- `constructive_feedback`: Nhận xét chi tiết mang tính xây dựng
+- `overall_feedback` (string): Tổng quan về chất lượng ghi chú
+- `strengths` (array): 2-3 điểm mạnh của ghi chú
+- `areas_for_improvement` (array): 2-3 điểm cần cải thiện
+- `specific_corrections` (array): Các điểm hiểu sai cần sửa (có thể rỗng nếu không có lỗi)
+- `suggestions_for_expansion` (array): Gợi ý mở rộng kiến thức
+
+**Technical Details**:
+
+- Uses HyperCLOVA X with temperature=0.7, max_tokens=2000
+- Language detection based on Unicode characters in first 200 chars
+- Response parsing supports both Vietnamese and English section markers
+- Typically responds in 2-5 seconds
+
+**Errors**:
+
+- `404`: Note không tồn tại hoặc không thuộc user
+- `500`: LLM service error
 
 ---
 
-### GET `/ai/recommend/{document_id}`
+### GET `/ai/recommendations/{document_id}`
 
-Đề xuất chủ đề cần học thêm
+**Đề xuất học tập thông minh với language detection**
+
+Phân tích tài liệu và ghi chú để đề xuất các chủ đề nên học thêm, tự động detect ngôn ngữ từ ghi chú của user.
 
 **Path Parameters**:
 
 - `document_id` (uuid): ID của tài liệu
 
-**Response** (200 OK):
+**Language Detection**:
+
+- Hệ thống analyze ngôn ngữ từ tất cả ghi chú liên quan đến document
+- Recommendations được trả về bằng ngôn ngữ chiếm đa số trong các ghi chú
+
+**Response (200 OK)** - Ví dụ tiếng Việt:
+
+```json
+{
+  "document_id": "uuid",
+  "missing_sections": [
+    "Chương 5: Neural Networks và Deep Learning",
+    "Chương 8: Reinforcement Learning",
+    "Phần 3.2: Gradient Descent và Optimization"
+  ],
+  "key_concepts_to_review": [
+    "Backpropagation algorithm - thuật toán học của neural networks",
+    "Convolutional Neural Networks (CNN) cho computer vision",
+    "Recurrent Neural Networks (RNN) cho xử lý chuỗi",
+    "Transfer learning và pretrained models"
+  ],
+  "coverage_percentage": 65,
+  "overall_recommendation": "Bạn đã hoàn thành 65% nội dung tài liệu, cho thấy sự tiến bộ tốt. Tập trung vào các chủ đề về neural networks và deep learning sẽ giúp bạn có cái nhìn toàn diện hơn về machine learning hiện đại. Đặc biệt chú ý đến backpropagation - đây là thuật toán cốt lõi giúp neural networks học được. Sau khi nắm vững phần này, hãy chuyển sang reinforcement learning để hiểu về học tăng cường."
+}
+```
+
+**Response (200 OK)** - Ví dụ tiếng Anh:
+
+```json
+{
+  "document_id": "uuid",
+  "missing_sections": [
+    "Chapter 5: Neural Networks and Deep Learning",
+    "Chapter 8: Reinforcement Learning",
+    "Section 3.2: Gradient Descent and Optimization"
+  ],
+  "key_concepts_to_review": [
+    "Backpropagation algorithm - the learning mechanism of neural networks",
+    "Convolutional Neural Networks (CNN) for computer vision",
+    "Recurrent Neural Networks (RNN) for sequence processing",
+    "Transfer learning and pretrained models"
+  ],
+  "coverage_percentage": 65,
+  "overall_recommendation": "You've completed 65% of the document content, showing good progress. Focusing on neural networks and deep learning topics will give you a more comprehensive view of modern machine learning. Pay special attention to backpropagation - this is the core algorithm that enables neural networks to learn. Once you master this, move on to reinforcement learning to understand how agents learn from interaction."
+}
+```
+
+**Fields Explanation**:
+
+- `missing_sections` (array): Các phần trong document chưa được ghi chú
+- `key_concepts_to_review` (array): Các concept quan trọng nên tập trung học
+- `coverage_percentage` (int): % tài liệu đã được cover (0-100)
+- `overall_recommendation` (string): Lời khuyên chi tiết về lộ trình học tiếp
+
+**Technical Details**:
+
+- Uses HyperCLOVA X with temperature=0.7, max_tokens=1500
+- Analyzes all notes related to the document
+- Language detection from combined note content (first 500 chars)
+- Coverage calculated based on note count vs document chunks
+
+**Errors**:
+
+- `404`: Document không tồn tại hoặc không thuộc user
+- `500`: LLM service error
+
+---
+
+### GET `/ai/recommend/{document_id}`
+
+**Deprecated**: Use `/ai/recommendations/{document_id}` instead
+
+Đề xuất chủ đề cần học thêm (old format - maintained for backward compatibility)
+
+**Path Parameters**:
+
+- `document_id` (uuid): ID của tài liệu
+
+**Response (200 OK)**:
 
 ```json
 {
@@ -978,16 +1153,9 @@ Review và chấm điểm ghi chú
     "Q-learning và policy gradient"
   ],
   "coverage_percentage": 65,
-  "recommendations": "Bạn đã hoàn thành 65% nội dung tài liệu. Tập trung vào các chủ đề về neural networks và reinforcement learning sẽ giúp bạn có cái nhìn toàn diện hơn về machine learning. Đặc biệt chú ý đến backpropagation - đây là thuật toán cốt lõi của deep learning."
+  "recommendations": "Bạn đã hoàn thành 65% nội dung tài liệu..."
 }
 ```
-
-**Fields Explanation**:
-
-- `missing_sections`: Các phần trong tài liệu chưa ghi chú
-- `suggested_topics`: Các chủ đề nên tập trung học
-- `coverage_percentage`: % tài liệu đã được cover (0-100)
-- `recommendations`: Lời khuyên chi tiết
 
 ---
 

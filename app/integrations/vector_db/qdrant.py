@@ -14,19 +14,34 @@ class QdrantService(VectorDB):
     
     def __init__(self):
         from app.core.config import settings
-        self.client = QdrantClient(
-            host=settings.QDRANT_HOST,
-            port=settings.QDRANT_PORT
-        )
+        
+        # Support both local and cloud deployment
+        if settings.QDRANT_API_KEY:
+            # Cloud deployment (Qdrant Cloud)
+            self.client = QdrantClient(
+                url=settings.QDRANT_URL,
+                api_key=settings.QDRANT_API_KEY
+            )
+        else:
+            # Local deployment (Docker)
+            self.client = QdrantClient(
+                host=settings.QDRANT_HOST,
+                port=settings.QDRANT_PORT
+            )
+        
         self.collection_name = settings.QDRANT_COLLECTION_NAME
         self._ensure_collection()
     
     def _ensure_collection(self):
         """Ensure the collection exists, create if not"""
+        from qdrant_client.models import PayloadSchemaType
+        
         collections = self.client.get_collections().collections
         collection_names = [c.name for c in collections]
         
-        if self.collection_name not in collection_names:
+        collection_exists = self.collection_name in collection_names
+        
+        if not collection_exists:
             self.client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=VectorParams(
@@ -34,6 +49,20 @@ class QdrantService(VectorDB):
                     distance=Distance.COSINE
                 )
             )
+        
+        # Always ensure payload index exists for document_id (required for Qdrant Cloud filtering)
+        # This is safe to call even if index already exists
+        try:
+            self.client.create_payload_index(
+                collection_name=self.collection_name,
+                field_name="document_id",
+                field_schema=PayloadSchemaType.KEYWORD
+            )
+        except Exception as e:
+            # Index might already exist, which is fine
+            if "already exists" not in str(e).lower():
+                # Only log if it's not a "already exists" error
+                print(f"Note: Could not create index (may already exist): {e}")
     
     async def add_vectors(
         self,

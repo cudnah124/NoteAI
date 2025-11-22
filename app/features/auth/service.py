@@ -47,7 +47,8 @@ class AuthService:
         new_user = User(
             email=user_data.email,
             password_hash=hashed_password,
-            full_name=user_data.full_name
+            full_name=user_data.full_name,
+            phone=user_data.phone
         )
         
         self.db.add(new_user)
@@ -90,7 +91,13 @@ class AuthService:
             expires_delta=access_token_expires
         )
         
-        return Token(access_token=access_token, token_type="bearer")
+        # Return with session wrapper for frontend compatibility
+        return {
+            "session": {
+                "access_token": access_token,
+                "token_type": "bearer"
+            }
+        }
     
     async def get_user_by_email(self, email: str) -> User | None:
         """Get user by email address"""

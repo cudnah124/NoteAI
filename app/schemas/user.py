@@ -11,6 +11,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=6, description="Password must be at least 6 characters")
     full_name: str | None = Field(None, max_length=255, description="User's full name")
+    phone: str | None = Field(None, max_length=20, description="User's phone number")
 
 
 class UserLogin(BaseModel):
@@ -24,6 +25,7 @@ class UserResponse(BaseModel):
     id: UUID
     email: str
     full_name: str | None
+    phone: str | None
     created_at: datetime
     
     class Config:

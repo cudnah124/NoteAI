@@ -8,6 +8,7 @@ from io import BytesIO
 import logging
 import re
 from urllib.parse import urlparse, parse_qs
+from docx import Document
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,50 @@ class DocumentProcessor:
             all_chunks.extend(page_chunks)
         
         return full_text, all_chunks
+    
+    def process_docx(self, file_content: bytes) -> tuple[str, List[Dict[str, Any]]]:
+        """
+        Process DOCX file
+        
+        Args:
+            file_content: DOCX file bytes
+            
+        Returns:
+            Tuple of (full_text, chunks)
+        """
+        try:
+            docx_file = BytesIO(file_content)
+            doc = Document(docx_file)
+            
+            all_chunks = []
+            full_text = ""
+            
+            # Extract text from paragraphs
+            for para_num, paragraph in enumerate(doc.paragraphs):
+                para_text = paragraph.text
+                if para_text.strip():  # Skip empty paragraphs
+                    full_text += para_text + "\n"
+            
+            # Extract text from tables
+            for table in doc.tables:
+                for row in table.rows:
+                    row_text = " | ".join([cell.text for cell in row.cells])
+                    if row_text.strip():
+                        full_text += row_text + "\n"
+            
+            # Chunk the entire document
+            all_chunks = self.chunk_text(
+                full_text,
+                metadata={"type": "docx"}
+            )
+            
+            logger.info(f"DOCX processed successfully, extracted {len(full_text)} characters, {len(all_chunks)} chunks")
+            
+            return full_text, all_chunks
+            
+        except Exception as e:
+            logger.error(f"Error processing DOCX: {e}")
+            raise
     
     def process_image(self, file_content: bytes) -> tuple[str, List[Dict[str, Any]]]:
         """
@@ -217,6 +262,88 @@ class DocumentProcessor:
             logger.error(f"Error processing YouTube URL: {e}")
             text = f"[YouTube processing error: {str(e)}]"
             chunks = self.chunk_text(text, metadata={"type": "youtube", "error": str(e)})
+            return text, chunks
+    
+    async def process_web_url(self, url: str) -> tuple[str, List[Dict[str, Any]]]:
+        """
+        Process web URL using BeautifulSoup for fast HTML parsing
+        
+        Args:
+            url: Website URL
+            
+        Returns:
+            Tuple of (extracted_text, chunks)
+        """
+        try:
+            import httpx
+            from bs4 import BeautifulSoup
+            
+            logger.info(f"Fetching content from URL: {url}")
+            
+            # Fetch URL with timeout and proper headers to avoid 403 errors
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'DNT': '1',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1'
+            }
+            
+            async with httpx.AsyncClient(timeout=30.0, follow_redirects=True, headers=headers) as client:
+                response = await client.get(url)
+                response.raise_for_status()
+                html_content = response.text
+            
+            # Parse HTML
+            soup = BeautifulSoup(html_content, 'html.parser')
+            
+            # Remove script and style elements
+            for script in soup(["script", "style", "nav", "footer", "header"]):
+                script.decompose()
+            
+            # Get text content
+            text = soup.get_text(separator='\n', strip=True)
+            
+            # Clean up text: remove multiple newlines and spaces
+            lines = [line.strip() for line in text.split('\n') if line.strip()]
+            full_text = '\n'.join(lines)
+            
+            if not full_text.strip():
+                logger.error("No text content extracted from URL")
+                text = "[No text content found on webpage]"
+                chunks = self.chunk_text(text, metadata={"type": "web", "error": "empty_content"})
+                return text, chunks
+            
+            logger.info(f"Web content extracted successfully, length: {len(full_text)} characters")
+            
+            # Chunk the content
+            chunks = self.chunk_text(
+                full_text,
+                metadata={
+                    "type": "web",
+                    "source": "web_scraping",
+                    "url": url
+                }
+            )
+            
+            return full_text, chunks
+            
+        except httpx.TimeoutException:
+            logger.error(f"Timeout fetching URL: {url}")
+            text = "[Website request timed out]"
+            chunks = self.chunk_text(text, metadata={"type": "web", "error": "timeout"})
+            return text, chunks
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error fetching URL: {e}")
+            text = f"[HTTP error: {str(e)}]"
+            chunks = self.chunk_text(text, metadata={"type": "web", "error": str(e)})
+            return text, chunks
+        except Exception as e:
+            logger.error(f"Error processing web URL: {e}")
+            text = f"[Web processing error: {str(e)}]"
+            chunks = self.chunk_text(text, metadata={"type": "web", "error": str(e)})
             return text, chunks
     
     async def process_video(self, file_content: bytes) -> tuple[str, List[Dict[str, Any]]]:

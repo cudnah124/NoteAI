@@ -1,55 +1,99 @@
 # NoteAI Backend
 
-AI-powered note-taking and document analysis system với RAG (Retrieval-Augmented Generation).
+AI-powered note-taking and document analysis system with RAG (Retrieval-Augmented Generation).
+
+## 🌟 Features
+
+- **Multi-source Document Processing**: PDF, DOCX, Images (instant processing)
+- **AI-Powered Analysis**: HyperCLOVA X for intelligent note review with language detection
+- **RAG (Retrieval-Augmented Generation)**: Context-aware Q&A using Qdrant vector DB
+- **Real-time Chat**: Interactive Q&A with documents
+- **Study Recommendations**: AI-powered learning suggestions
+- **Production-Ready**: Railway deployment with PostgreSQL + Qdrant Cloud
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐
+│   Frontend      │
+│  (Next.js)      │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐      ┌──────────────────┐
+│  FastAPI App    │◄────►│  PostgreSQL DB   │
+│  (Backend API)  │      │  (User/Docs)     │
+│  Railway.app    │      │  Railway         │
+└────────┬────────┘      └──────────────────┘
+         │
+         ├──────────────►┌──────────────────┐
+         │               │  Qdrant Cloud    │
+         │               │  (Vector Store)  │
+         │               └──────────────────┘
+         │
+         └──────────────►┌──────────────────┐
+                         │  Naver Cloud     │
+                         │  HyperCLOVA X    │
+                         └──────────────────┘
+```
+
+         │
+         ├──────────────►┌──────────────────┐
+         │               │  Redis Cache     │
+         │               │  (Sessions)      │
+         │               └──────────────────┘
+         │
+         └──────────────►┌──────────────────┐
+                         │  Naver Cloud     │
+                         │  - HyperCLOVA X  │
+                         │  - Embeddings    │
+                         │  - Speech API    │
+                         └──────────────────┘
+
+````
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Local Development
 
-- Docker & Docker Compose
-- Python 3.11+ (nếu chạy local)
-- Naver Cloud Platform account (API keys)
-
-### Setup & Run
-
-1. **Clone và setup environment:**
-
+1. **Clone and setup:**
    ```bash
    cp .env.example .env
-   # Edit .env với API keys của bạn
-   ```
+   # Edit .env with your API keys
+````
 
-2. **Khởi động services:**
+2. **Start services:**
 
    ```bash
    docker-compose up -d
    ```
 
-3. **Kiểm tra services:**
-
-   ```bash
-   docker-compose ps
-   ```
-
-   Services đang chạy:
-
-   - `noteai_app` - FastAPI backend (port 8000)
-   - `noteai_postgres` - PostgreSQL database (port 5432)
-   - `noteai_redis` - Redis cache (port 6379)
-   - `noteai_qdrant` - Vector database (port 6333)
-
-4. **Khởi tạo database:**
-
-   ```bash
-   docker exec noteai_app python reset_db.py
-   ```
-
-5. **Truy cập API:**
+3. **Access API:**
    - API: http://localhost:8000
    - Swagger docs: http://localhost:8000/docs
    - ReDoc: http://localhost:8000/redoc
 
-## 🧪 Testing
+### Railway Deployment
+
+See [RAILWAY_DEPLOYMENT.md](RAILWAY_DEPLOYMENT.md) for complete guide.
+
+**Quick steps:**
+
+1. Push to GitHub
+2. Connect Railway to your repo
+3. Add PostgreSQL database
+4. Set environment variables (see `.env.example`)
+5. Deploy automatically
+
+**Required services:**
+
+- Railway PostgreSQL (auto-provisioned)
+- Qdrant Cloud (vector database)
+- Naver Cloud Platform (AI APIs)
+
+## 📚 API Documentation
+
+See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for complete endpoint reference.
 
 ### Chạy integration tests:
 
@@ -372,6 +416,56 @@ netstat -ano | findstr "5432"
 
 # Đổi port trong docker-compose.yml nếu cần
 ```
+
+## 🌐 Production Deployment
+
+### Local vs Cloud
+
+**Local Development:**
+
+- Qdrant, PostgreSQL, Redis run in Docker
+- No API keys needed for vector DB
+
+**Production:**
+
+- Use Qdrant Cloud for vector database
+- Use managed PostgreSQL (Supabase, Railway, AWS RDS)
+- Use managed Redis (Redis Cloud, Upstash)
+
+### Deploy to Cloud
+
+**See detailed guide:** [`DEPLOYMENT.md`](./DEPLOYMENT.md)
+
+**Quick Setup:**
+
+1. **Create Qdrant Cloud cluster** at https://cloud.qdrant.io/
+
+2. **Update `.env` for production:**
+
+   ```env
+   # Qdrant Cloud
+   QDRANT_URL=https://your-cluster.qdrant.io:6333
+   QDRANT_API_KEY=qdr_xxxxxxxxxxxxx
+
+   # PostgreSQL Cloud
+   DATABASE_URL=postgresql+asyncpg://user:pass@host/db
+
+   # Redis Cloud
+   REDIS_URL=redis://default:pass@host:6379
+
+   # Production settings
+   ENVIRONMENT=production
+   DEBUG=False
+   MOCK_MODE=false
+   ```
+
+3. **Deploy app** to:
+   - Azure Container Apps
+   - AWS ECS Fargate
+   - Google Cloud Run
+   - Railway / Render / Fly.io
+
+**Code already supports both!** Just set `QDRANT_API_KEY` to enable cloud mode.
 
 ## 📝 Notes
 

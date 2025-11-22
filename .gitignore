@@ -55,6 +55,44 @@ celerybeat.pid
 .pytest_cache/
 .coverage
 htmlcov/
+test_*.py
+reset_db.py
 
 # Docker
 .dockerignore
+
+# Documents and uploads (runtime generated)
+documents/
+uploads/
+
+# Frontend (separate repository)
+frontend/
+
+# Railway
+.railway/
+
+# Development files
+start.bat
+start.sh
+BACKEND_FRONTEND_COMPATIBILITY_CHECK.md
+DOCS.md
+
+# Local development
+docker-compose.override.yml
+.env.development
+.env.test
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~.nib
+
+# Cache
+.cache/
+*.cache
+
+# Package managers
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
