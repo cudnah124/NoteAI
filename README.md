@@ -10,16 +10,10 @@ AI-powered note-taking and document analysis system with RAG (Retrieval-Augmente
 
 ### 1. Authentication Flow
 
-All endpoints (except `/auth/*`) require JWT token in header:
+**Step 1: Register User**
 
 ```http
-Authorization: Bearer <your-jwt-token>
-```
-
-**Register User:**
-
-```http
-POST /auth/register
+POST https://noteai-kbsb.onrender.com/auth/register
 Content-Type: application/json
 
 {
@@ -31,10 +25,10 @@ Content-Type: application/json
 Response: { "id": "uuid", "email": "...", ... }
 ```
 
-**Login:**
+**Step 2: Login to Get Token**
 
 ```http
-POST /auth/login
+POST https://noteai-kbsb.onrender.com/auth/login
 Content-Type: application/json
 
 {
@@ -42,10 +36,51 @@ Content-Type: application/json
   "password": "SecurePass123"
 }
 
-Response: { "access_token": "eyJhbGc...", "token_type": "bearer" }
+Response:
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
 ```
 
-**Token expires in 30 minutes** - store it and use in all subsequent requests.
+**Step 3: Use Token in All Other Requests**
+
+Copy the `access_token` from login response and use it in the `Authorization` header:
+
+```http
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Example with JavaScript:**
+
+```javascript
+// 1. Login
+const loginRes = await fetch("https://noteai-kbsb.onrender.com/auth/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    email: "user@example.com",
+    password: "SecurePass123",
+  }),
+});
+
+const { access_token } = await loginRes.json();
+console.log("Token:", access_token);
+
+// 2. Use token in subsequent requests
+const documentsRes = await fetch(
+  "https://noteai-kbsb.onrender.com/documents/",
+  {
+    headers: { Authorization: `Bearer ${access_token}` },
+  }
+);
+```
+
+**⚠️ Important:**
+
+- Token expires in **30 minutes** - store it securely (localStorage/sessionStorage)
+- All endpoints except `/auth/*` require this token
+- If you get 401 error, token is expired - login again to get new token
 
 ---
 
