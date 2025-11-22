@@ -2,7 +2,7 @@
 
 AI-powered note-taking and document analysis system with RAG (Retrieval-Augmented Generation).
 
-**Base URL**: `http://localhost:8000` (update with your production URL)
+**Base URL**: `https://noteai-kbsb.onrender.com/` (update with your production URL)
 
 ---
 
@@ -11,11 +11,13 @@ AI-powered note-taking and document analysis system with RAG (Retrieval-Augmente
 ### 1. Authentication Flow
 
 All endpoints (except `/auth/*`) require JWT token in header:
+
 ```http
 Authorization: Bearer <your-jwt-token>
 ```
 
 **Register User:**
+
 ```http
 POST /auth/register
 Content-Type: application/json
@@ -30,6 +32,7 @@ Response: { "id": "uuid", "email": "...", ... }
 ```
 
 **Login:**
+
 ```http
 POST /auth/login
 Content-Type: application/json
@@ -60,24 +63,24 @@ Response: { "access_token": "eyJhbGc...", "token_type": "bearer" }
 
 ### 🔐 Authentication (`/auth`)
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| POST | `/auth/register` | Create new account | ❌ |
-| POST | `/auth/login` | Get JWT token | ❌ |
+| Method | Endpoint         | Description        | Auth Required |
+| ------ | ---------------- | ------------------ | ------------- |
+| POST   | `/auth/register` | Create new account | ❌            |
+| POST   | `/auth/login`    | Get JWT token      | ❌            |
 
 ---
 
 ### 📄 Documents (`/documents`, `/files`)
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| POST | `/files/upload/document` | Upload PDF/DOCX (frontend-compatible) | ✅ |
-| POST | `/documents/upload` | Upload file (alternative) | ✅ |
-| POST | `/documents/url` | Process web URL/YouTube | ✅ |
-| GET | `/documents/` | List all documents | ✅ |
-| GET | `/documents/{id}` | Get document details | ✅ |
-| GET | `/documents/{id}/status` | Check processing status | ✅ |
-| DELETE | `/documents/{id}` | Delete document | ✅ |
+| Method | Endpoint                 | Description                           | Auth Required |
+| ------ | ------------------------ | ------------------------------------- | ------------- |
+| POST   | `/files/upload/document` | Upload PDF/DOCX (frontend-compatible) | ✅            |
+| POST   | `/documents/upload`      | Upload file (alternative)             | ✅            |
+| POST   | `/documents/url`         | Process web URL/YouTube               | ✅            |
+| GET    | `/documents/`            | List all documents                    | ✅            |
+| GET    | `/documents/{id}`        | Get document details                  | ✅            |
+| GET    | `/documents/{id}/status` | Check processing status               | ✅            |
+| DELETE | `/documents/{id}`        | Delete document                       | ✅            |
 
 **Frontend-compatible endpoints:**
 | Method | Endpoint | Description |
@@ -91,36 +94,37 @@ Response: { "access_token": "eyJhbGc...", "token_type": "bearer" }
 
 ### 📝 Notes (`/notes`)
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| POST | `/notes/` | Create new note | ✅ |
-| GET | `/notes/` | List all notes | ✅ |
-| GET | `/notes/{id}` | Get specific note | ✅ |
-| PUT | `/notes/{id}` | Update note | ✅ |
-| DELETE | `/notes/{id}` | Delete note | ✅ |
+| Method | Endpoint      | Description       | Auth Required |
+| ------ | ------------- | ----------------- | ------------- |
+| POST   | `/notes/`     | Create new note   | ✅            |
+| GET    | `/notes/`     | List all notes    | ✅            |
+| GET    | `/notes/{id}` | Get specific note | ✅            |
+| PUT    | `/notes/{id}` | Update note       | ✅            |
+| DELETE | `/notes/{id}` | Delete note       | ✅            |
 
 ---
 
 ### 💬 Chat (`/chat`)
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| POST | `/chat/session` | Create chat session | ✅ |
-| POST | `/chat/message` | Send message (RAG Q&A) | ✅ |
-| GET | `/chat/session/{id}/messages` | Get chat history | ✅ |
-| GET | `/chat/sessions` | List all sessions | ✅ |
-| DELETE | `/chat/session/{id}` | Delete session | ✅ |
+| Method | Endpoint                      | Description            | Auth Required |
+| ------ | ----------------------------- | ---------------------- | ------------- |
+| POST   | `/chat/session`               | Create chat session    | ✅            |
+| POST   | `/chat/message`               | Send message (RAG Q&A) | ✅            |
+| GET    | `/chat/session/{id}/messages` | Get chat history       | ✅            |
+| GET    | `/chat/sessions`              | List all sessions      | ✅            |
+| DELETE | `/chat/session/{id}`          | Delete session         | ✅            |
 
 ---
 
 ### 🤖 AI Services (`/ai`)
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| POST | `/ai/review` | Review note with AI | ✅ |
-| GET | `/ai/recommendations/{document_id}` | Get study recommendations | ✅ |
+| Method | Endpoint                            | Description               | Auth Required |
+| ------ | ----------------------------------- | ------------------------- | ------------- |
+| POST   | `/ai/review`                        | Review note with AI       | ✅            |
+| GET    | `/ai/recommendations/{document_id}` | Get study recommendations | ✅            |
 
 **✨ AI Features:**
+
 - **Language Detection**: Automatically detects Vietnamese/English from note content
 - **Multilingual Responses**: AI responds in same language as your note
 - **Smart Review**: Provides strengths, improvements, corrections, and suggestions
@@ -135,21 +139,24 @@ Response: { "access_token": "eyJhbGc...", "token_type": "bearer" }
 ```javascript
 // 1. Upload document
 const formData = new FormData();
-formData.append('file', pdfFile);
+formData.append("file", pdfFile);
 
-const uploadRes = await fetch('https://api.example.com/files/upload/document', {
-  method: 'POST',
-  headers: { 'Authorization': `Bearer ${token}` },
-  body: formData
+const uploadRes = await fetch("https://api.example.com/files/upload/document", {
+  method: "POST",
+  headers: { Authorization: `Bearer ${token}` },
+  body: formData,
 });
 
 const { document } = await uploadRes.json();
 // Response: { success: true, document: { id, etag, type, status, ... } }
 
 // 2. Check processing status (optional - files process instantly)
-const statusRes = await fetch(`https://api.example.com/documents/${document.id}/status`, {
-  headers: { 'Authorization': `Bearer ${token}` }
-});
+const statusRes = await fetch(
+  `https://api.example.com/documents/${document.id}/status`,
+  {
+    headers: { Authorization: `Bearer ${token}` },
+  }
+);
 
 const status = await statusRes.json();
 // Response: { id, status: "completed", progress_percentage: 100 }
@@ -161,28 +168,28 @@ const status = await statusRes.json();
 
 ```javascript
 // 1. Create chat session
-const sessionRes = await fetch('https://api.example.com/chat/session', {
-  method: 'POST',
+const sessionRes = await fetch("https://api.example.com/chat/session", {
+  method: "POST",
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
   },
-  body: JSON.stringify({ document_id: documentId })
+  body: JSON.stringify({ document_id: documentId }),
 });
 
 const { id: sessionId } = await sessionRes.json();
 
 // 2. Send message
-const messageRes = await fetch('https://api.example.com/chat/message', {
-  method: 'POST',
+const messageRes = await fetch("https://api.example.com/chat/message", {
+  method: "POST",
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
     session_id: sessionId,
-    content: "What is this document about?"
-  })
+    content: "What is this document about?",
+  }),
 });
 
 const aiResponse = await messageRes.json();
@@ -195,29 +202,29 @@ const aiResponse = await messageRes.json();
 
 ```javascript
 // 1. Create note
-const noteRes = await fetch('https://api.example.com/notes/', {
-  method: 'POST',
+const noteRes = await fetch("https://api.example.com/notes/", {
+  method: "POST",
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
     title: "Machine Learning Notes",
     content: "# Supervised Learning\n\n...",
-    document_id: documentId
-  })
+    document_id: documentId,
+  }),
 });
 
 const note = await noteRes.json();
 
 // 2. Get AI review (detects language automatically)
-const reviewRes = await fetch('https://api.example.com/ai/review', {
-  method: 'POST',
+const reviewRes = await fetch("https://api.example.com/ai/review", {
+  method: "POST",
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
   },
-  body: JSON.stringify({ note_id: note.id })
+  body: JSON.stringify({ note_id: note.id }),
 });
 
 const review = await reviewRes.json();
@@ -235,9 +242,12 @@ const review = await reviewRes.json();
 ### Use Case 4: Get Study Recommendations
 
 ```javascript
-const recsRes = await fetch(`https://api.example.com/ai/recommendations/${documentId}`, {
-  headers: { 'Authorization': `Bearer ${token}` }
-});
+const recsRes = await fetch(
+  `https://api.example.com/ai/recommendations/${documentId}`,
+  {
+    headers: { Authorization: `Bearer ${token}` },
+  }
+);
 
 const recommendations = await recsRes.json();
 // Response: {
@@ -253,6 +263,7 @@ const recommendations = await recsRes.json();
 ## 🎯 Response Formats
 
 ### Success Response
+
 ```json
 {
   "id": "uuid",
@@ -262,6 +273,7 @@ const recommendations = await recsRes.json();
 ```
 
 ### Error Response
+
 ```json
 {
   "detail": "Error message here"
@@ -269,6 +281,7 @@ const recommendations = await recsRes.json();
 ```
 
 ### HTTP Status Codes
+
 - `200` - Success
 - `201` - Created
 - `204` - No Content (delete success)
@@ -298,6 +311,7 @@ fetch(`${API_URL}/auth/login`, { ... });
 ## 📊 CORS Configuration
 
 Backend allows these origins (configured via `ALLOWED_ORIGINS` env variable):
+
 - `http://localhost:3000` (Next.js dev)
 - `http://localhost:5173` (Vite dev)
 - Your production frontend domain
@@ -337,42 +351,45 @@ If you get CORS errors, contact backend team to add your domain.
 ## 💡 Tips for Frontend Developers
 
 ### Token Management
+
 ```javascript
 // Store token after login
-localStorage.setItem('token', response.access_token);
+localStorage.setItem("token", response.access_token);
 
 // Use in requests
-const token = localStorage.getItem('token');
+const token = localStorage.getItem("token");
 fetch(url, {
-  headers: { 'Authorization': `Bearer ${token}` }
+  headers: { Authorization: `Bearer ${token}` },
 });
 
 // Handle 401 (expired token)
 if (response.status === 401) {
-  localStorage.removeItem('token');
-  router.push('/login');
+  localStorage.removeItem("token");
+  router.push("/login");
 }
 ```
 
 ### Error Handling
+
 ```javascript
 try {
   const res = await fetch(url, options);
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.detail || 'Request failed');
+    throw new Error(error.detail || "Request failed");
   }
   return await res.json();
 } catch (error) {
-  console.error('API Error:', error.message);
+  console.error("API Error:", error.message);
   // Show toast notification
 }
 ```
 
 ### File Upload with Progress
+
 ```javascript
 const formData = new FormData();
-formData.append('file', file);
+formData.append("file", file);
 
 const xhr = new XMLHttpRequest();
 xhr.upload.onprogress = (e) => {
@@ -380,27 +397,28 @@ xhr.upload.onprogress = (e) => {
   setProgress(percent);
 };
 
-xhr.open('POST', `${API_URL}/files/upload/document`);
-xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+xhr.open("POST", `${API_URL}/files/upload/document`);
+xhr.setRequestHeader("Authorization", `Bearer ${token}`);
 xhr.send(formData);
 ```
 
 ### Language Detection (Automatic)
+
 ```javascript
 // Just send your note content - AI detects language automatically
 const note = {
   title: "Học máy",
-  content: "# Supervised Learning\n\nHọc có giám sát là..."
+  content: "# Supervised Learning\n\nHọc có giám sát là...",
 };
 
 // AI will respond in Vietnamese because content is Vietnamese
 const review = await fetch(`${API_URL}/ai/review`, {
-  method: 'POST',
+  method: "POST",
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
   },
-  body: JSON.stringify({ note_id: noteId })
+  body: JSON.stringify({ note_id: noteId }),
 });
 
 // Response will be: { overall_feedback: "Ghi chú của bạn...", ... }
@@ -411,29 +429,24 @@ const review = await fetch(`${API_URL}/ai/review`, {
 ## 🐛 Common Issues
 
 ### CORS Error
+
 **Problem**: `Access-Control-Allow-Origin` error  
 **Solution**: Contact backend team to add your domain to `ALLOWED_ORIGINS`
 
 ### 401 Unauthorized
+
 **Problem**: Token expired or invalid  
 **Solution**: Login again to get new token (tokens expire after 30 minutes)
 
 ### File Upload Failed
+
 **Problem**: File size too large  
 **Solution**: Files must be < 10MB. Compress large PDFs before upload.
 
 ### Chat Not Working
+
 **Problem**: Document not yet processed  
 **Solution**: Check document status with `GET /documents/{id}/status` - wait for `status: "completed"`
-
----
-
-## 📞 Support
-
-- **API Documentation**: `https://your-api.railway.app/docs`
-- **Complete Reference**: [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
-- **Backend Issues**: Open issue on GitHub
-- **Deployment Help**: See [RAILWAY_DEPLOYMENT.md](RAILWAY_DEPLOYMENT.md)
 
 ---
 
@@ -445,17 +458,3 @@ const review = await fetch(`${API_URL}/ai/review`, {
 - **Recommendations**: 2-4 seconds
 
 All endpoints are async and optimized for production use.
-
----
-
----
-
-## 📞 Support
-
-- **Interactive API Docs**: `http://localhost:8000/docs` (Swagger UI)
-- **Alternative Docs**: `http://localhost:8000/redoc` (ReDoc)
-- **Complete Reference**: [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
-
----
-
-## ⚡ Performance Notes
