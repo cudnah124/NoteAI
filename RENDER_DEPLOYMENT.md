@@ -109,6 +109,48 @@ Render provides:
 
 ## Troubleshooting
 
+### Database Connection Error: "Name or service not known"
+
+**Cause**: DATABASE_URL not set or incorrect format.
+
+**Solution**:
+1. Go to Render Dashboard → PostgreSQL service
+2. Copy **Internal Database URL** (NOT External)
+3. Go to Web Service → Environment
+4. Add/Update `DATABASE_URL` with the copied URL
+5. **Important**: Use the URL as-is (Render format: `postgresql://...`)
+   - Don't add `postgresql+asyncpg://` prefix
+   - The app handles the conversion automatically
+
+**Format should be:**
+```
+postgresql://user:password@hostname/database
+```
+
+**Example:**
+```
+postgresql://noteai_user:abcd1234@dpg-xxxxx-a.oregon-postgres.render.com/noteai_db
+```
+
+### Database Connection Steps
+
+1. **Create PostgreSQL first:**
+   - New + → PostgreSQL
+   - Name: noteai-db
+   - Wait for "Available" status
+
+2. **Get connection string:**
+   - Click on noteai-db
+   - Copy "Internal Database URL"
+
+3. **Set in Web Service:**
+   - Go to noteai-backend → Environment
+   - Add `DATABASE_URL=<paste-internal-url>`
+   - Save Changes
+
+4. **Redeploy:**
+   - Manual Deploy → Deploy latest commit
+
 ### Cold Starts (Free Tier)
 Free tier spins down after 15 minutes of inactivity. First request takes 1-2 minutes.
 
