@@ -1787,13 +1787,12 @@ function ChatInterface({ sessionId }: { sessionId: string }) {
 ## CORS Configuration
 
 Allowed origins:
-
-- `http://localhost:3000` (React)
-- `http://localhost:5173` (Vite)
-- Production domain (TBD)
+- `http://localhost:3000` (Next.js dev)
+- `http://localhost:5173` (Vite dev)
+- Your production frontend domain (contact backend team)
 
 ---
 
-**Last Updated**: November 20, 2025  
+**Last Updated**: November 22, 2025  
 **API Version**: 1.0.0  
 **Documentation**: For Frontend Developers
