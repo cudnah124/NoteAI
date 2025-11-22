@@ -2,7 +2,7 @@
 
 AI-powered note-taking and document analysis system with RAG (Retrieval-Augmented Generation).
 
-**Base URL**: `https://noteai-kbsb.onrender.com/` (update with your production URL)
+**Base URL**: `https://noteai-kbsb.onrender.com/`
 
 ---
 
@@ -141,18 +141,21 @@ Response: { "access_token": "eyJhbGc...", "token_type": "bearer" }
 const formData = new FormData();
 formData.append("file", pdfFile);
 
-const uploadRes = await fetch("https://api.example.com/files/upload/document", {
-  method: "POST",
-  headers: { Authorization: `Bearer ${token}` },
-  body: formData,
-});
+const uploadRes = await fetch(
+  "https://noteai-kbsb.onrender.com/files/upload/document",
+  {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  }
+);
 
 const { document } = await uploadRes.json();
 // Response: { success: true, document: { id, etag, type, status, ... } }
 
 // 2. Check processing status (optional - files process instantly)
 const statusRes = await fetch(
-  `https://api.example.com/documents/${document.id}/status`,
+  `https://noteai-kbsb.onrender.com/documents/${document.id}/status`,
   {
     headers: { Authorization: `Bearer ${token}` },
   }
@@ -168,29 +171,35 @@ const status = await statusRes.json();
 
 ```javascript
 // 1. Create chat session
-const sessionRes = await fetch("https://api.example.com/chat/session", {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({ document_id: documentId }),
-});
+const sessionRes = await fetch(
+  "https://noteai-kbsb.onrender.com/chat/session",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ document_id: documentId }),
+  }
+);
 
 const { id: sessionId } = await sessionRes.json();
 
 // 2. Send message
-const messageRes = await fetch("https://api.example.com/chat/message", {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    session_id: sessionId,
-    content: "What is this document about?",
-  }),
-});
+const messageRes = await fetch(
+  "https://noteai-kbsb.onrender.com/chat/message",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      session_id: sessionId,
+      content: "What is this document about?",
+    }),
+  }
+);
 
 const aiResponse = await messageRes.json();
 // Response: { id, session_id, content: "AI answer...", role: "assistant", ... }
@@ -202,7 +211,7 @@ const aiResponse = await messageRes.json();
 
 ```javascript
 // 1. Create note
-const noteRes = await fetch("https://api.example.com/notes/", {
+const noteRes = await fetch("https://noteai-kbsb.onrender.com/notes/", {
   method: "POST",
   headers: {
     Authorization: `Bearer ${token}`,
@@ -218,7 +227,7 @@ const noteRes = await fetch("https://api.example.com/notes/", {
 const note = await noteRes.json();
 
 // 2. Get AI review (detects language automatically)
-const reviewRes = await fetch("https://api.example.com/ai/review", {
+const reviewRes = await fetch("https://noteai-kbsb.onrender.com/ai/review", {
   method: "POST",
   headers: {
     Authorization: `Bearer ${token}`,
@@ -243,7 +252,7 @@ const review = await reviewRes.json();
 
 ```javascript
 const recsRes = await fetch(
-  `https://api.example.com/ai/recommendations/${documentId}`,
+  `https://noteai-kbsb.onrender.com/ai/recommendations/${documentId}`,
   {
     headers: { Authorization: `Bearer ${token}` },
   }
@@ -299,7 +308,7 @@ Frontend needs to set base URL:
 
 ```javascript
 // .env.local
-NEXT_PUBLIC_API_URL=https://your-app.railway.app
+NEXT_PUBLIC_API_URL=https://noteai-kbsb.onrender.com
 
 // Usage
 const API_URL = process.env.NEXT_PUBLIC_API_URL;

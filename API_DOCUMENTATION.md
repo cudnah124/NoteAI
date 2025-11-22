@@ -1787,6 +1787,7 @@ function ChatInterface({ sessionId }: { sessionId: string }) {
 ## CORS Configuration
 
 Allowed origins:
+
 - `http://localhost:3000` (Next.js dev)
 - `http://localhost:5173` (Vite dev)
 - Your production frontend domain (contact backend team)
