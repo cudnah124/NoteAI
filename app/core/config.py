@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     # ==============================================
     # Database Configuration
     # ==============================================
-    DATABASE_URL: str
+    DATABASE_URL: str = "postgresql://noteai_user:noteai_password@localhost:5432/noteai_db"
     TEST_DATABASE_URL: Optional[str] = None
     DB_HOST: str = "postgres"
     DB_PORT: int = 5432
@@ -21,9 +21,9 @@ class Settings(BaseSettings):
     DB_NAME: str = "noteai_db"
     
     # ==============================================
-    # Redis Configuration
+    # Redis Configuration (Optional)
     # ==============================================
-    REDIS_URL: str
+    REDIS_URL: Optional[str] = None
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0

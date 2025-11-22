@@ -9,6 +9,21 @@ from .config import settings
 
 logger = logging.getLogger(__name__)
 
+# Validate DATABASE_URL
+if not settings.DATABASE_URL:
+    logger.error("DATABASE_URL environment variable is not set!")
+    raise ValueError("DATABASE_URL is required. Please set it in your environment variables.")
+
+# Log connection attempt (hide password)
+masked_url = settings.DATABASE_URL
+if "@" in masked_url:
+    parts = masked_url.split("@")
+    if ":" in parts[0]:
+        user_pass = parts[0].split("://")[-1]
+        user = user_pass.split(":")[0]
+        masked_url = masked_url.replace(user_pass, f"{user}:****")
+logger.info(f"Connecting to database: {masked_url}")
+
 # Convert postgresql:// to postgresql+asyncpg:// for async support
 DATABASE_URL = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 
